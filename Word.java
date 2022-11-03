@@ -1,6 +1,8 @@
 public class Word extends Token {
     public String lexeme = "";
     public Word(int tag, String s) { super(tag); lexeme=s; }
+
+    @Override
     public String toString() { return "<" + tag + ", " + lexeme + ">"; }
     public static final Word
             assign = new Word(Tag.ASSIGN, "assign"),

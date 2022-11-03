@@ -13,20 +13,20 @@ public class Parser {
             case fact: case term: case expr: case start:
                 switch (look.tag) {
                     case '(', Tag.NUM -> {}
-                    default->error("Error, expected '(' or number after " +  look);
+                    default->error("Error, expected '(' or number instead of " +  look);
                 }
                 break;
 
             case exprp:
                 switch (look.tag) {
                     case '+', '-', ')', Tag.EOF -> {}
-                    default -> error("Error, expected '+', '-' or ')' after " +  look);
+                    default -> error("Error, expected '+', '-' or ')' instead of " +  look);
                 }
                 break;
             case termp:
                 switch (look.tag) {
                     case '+', '-', ')', '*', '/', Tag.EOF -> {}
-                    default -> error("Error, expected operator or ')' after " +  look);
+                    default -> error("Error, expected operator or ')' instead of " +  look);
                 }
                 break;
             default:
