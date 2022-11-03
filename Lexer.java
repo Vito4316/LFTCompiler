@@ -158,8 +158,8 @@ public class Lexer {
             if(state != 3 && state != 4) {
                 num *=10;
                 num += peek - '0';
+                readch(br);
             }
-            readch(br);
         }
 
         if(state == 3)
@@ -248,19 +248,5 @@ public class Lexer {
     }
     public Lexer() {
         fillDict();
-    }
-
-    public static void main(String[] args) {
-        Lexer lex = new Lexer();
-        String path = "C:\\Users\\vitoi\\Desktop\\LFT\\es2_1\\es2_1\\src\\file";
-        try {
-            BufferedReader br = new BufferedReader(new FileReader(path));
-            Token tok;
-            do {
-                tok = lex.lexical_scan(br);
-                System.out.println("Scan: " + tok);
-            } while (tok.tag != Tag.EOF);
-            br.close();
-        } catch (IOException e) {e.printStackTrace();}
     }
 }
