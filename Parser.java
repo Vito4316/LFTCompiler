@@ -1,36 +1,19 @@
 import java.io.*;
-import java.util.HashMap;
 
 public class Parser {
     private Lexer lex;
     private BufferedReader pbr;
     private Token look;
 
-    static final int fact = 0, term = 1, expr = 2, start = 3, exprp = 4, termp = 5;
-
-    private void guide(int func) {
+    private void checkGuide(int func) {
         switch (func) {
-            case fact: case term: case expr: case start:
-                switch (look.tag) {
-                    case '(', Tag.NUM -> {}
-                    default->error("Error, expected '(' or number instead of " +  look);
+            case statlistp:
+                switch(look.tag) {
+                    case Tag.ASSIGN, Tag.PRINT, Tag.READ, Tag.WHILE, Tag.COND, '{', ';' -> {}
+                    default -> error("Expected statement, condition or ;");
                 }
                 break;
-
-            case exprp:
-                switch (look.tag) {
-                    case '+', '-', ')', Tag.EOF -> {}
-                    default -> error("Error, expected '+', '-' or ')' instead of " +  look);
-                }
-                break;
-            case termp:
-                switch (look.tag) {
-                    case '+', '-', ')', '*', '/', Tag.EOF -> {}
-                    default -> error("Error, expected operator or ')' instead of " +  look);
-                }
-                break;
-            default:
-                error("Bad defined guide switch");
+            case stat:
         }
     }
     public Parser(Lexer l, BufferedReader br) {
@@ -51,92 +34,224 @@ public class Parser {
     void match(int t) {
         if (look.tag == t) {
             if (look.tag != Tag.EOF) move();
-        } else error("syntax error");
+        } else error("syntax error" + look);
     }
 
-    public void start() {
-        guide(start);
+    void prog() {
+        switch(look.tag) {
+            case Tag.ASSIGN, Tag.PRINT, Tag.READ, Tag.WHILE, Tag.COND, '{' -> {}
+            default -> error("Expected statement or condition");
+        }
 
-        expr();
+        statlist();
         match(Tag.EOF);
     }
 
-    private void expr() {
-        guide(expr);
+    void statlist() {
+        switch(look.tag) {
+            case Tag.ASSIGN, Tag.PRINT, Tag.READ, Tag.WHILE, Tag.COND, '{', ';' -> {}
+            default -> error("Expected statement, condition or ;");
+        }
 
-        term();
-        exprp();
-    }
+        stat();
+        statlistp();
+    } 
 
-    private void exprp() {
-        guide(exprp);
+    void statlistp() {
+        switch(look.tag) {
+            case Tag.ASSIGN, Tag.PRINT, Tag.READ, Tag.WHILE, Tag.COND, '{', ';' -> {}
+            default -> error("Expected statement, condition or ;");
+        }
 
-        switch (look.tag) {
-            case '+':
-                match('+');
-                term();
-                exprp();
+        switch(look.tag) {
+            case ';':
+                match(';');
+                stat();
+                statlistp();
                 break;
-            case '-':
-                match('-');
-                term();
-                exprp();
+            default:
+                break;
+        }
+    } 
+
+    void stat() {
+        switch(look.tag) {
+            case Tag.ASSIGN:
+                match(Tag.ASSIGN);
+                expr();
+                match(Tag.TO);
+                idlist();
+                break;
+            case Tag.PRINT:
+                match(Tag.PRINT);
+                match('[');
+                exprlist();
+                match(']');
+                break;
+            case Tag.READ:
+                match(Tag.READ);
+                match('[');
+                exprlist();
+                match(']');
+                break;
+            case Tag.WHILE:
+                match(Tag.WHILE);
+                match('(');
+                bexpr();
+                match(')');
+                stat();
+                break;
+            case Tag.COND:
+                match(Tag.COND);
+                match('[');
+                optlist();
+                match(']');
+                condp();
+                match(Tag.END);
+                break;    
+            case '{':
+                match('{');
+                statlist();
+                match('}');
+                break;
+        }
+    } 
+    void condp() {
+        switch(look.tag) {
+            case Tag.ELSE, Tag.END-> {}
+            default -> error("Expected else or end");
+        }
+
+        switch(look.tag) {
+            case Tag.ELSE:
+                match(Tag.ELSE);
+                stat();
                 break;
             default:
                 break;
         }
     }
-
-    private void term() {
-        guide(term);
-
-        fact();
-        termp();
+    void idlist() {
+        match(Tag.ID);
+        idlistp();
     }
 
-    private void termp() {
-        guide(termp);
+    void idlistp() {
+        switch(look.tag) {
+            case ']', ',' -> {}
+            default -> error("Expected ] or ,");
+        }
+        switch(look.tag) {
+            case ',':
+                match(',');
+                break;
+            default:
+                break;
+        }
+    } 
 
-        switch (look.tag) {
+    void optlist() {
+        switch(look.tag) {
+            case Tag.OPTION -> {}
+            default -> error("Expected option");
+        }
+        optitem();
+        optlistp();
+    }
+    void optlistp() {
+        switch(look.tag) {
+            case Tag.OPTION -> {}
+            default -> error("Expected option");
+        }
+        switch(look.tag) {
+            case Tag.OPTION:
+                match(Tag.OPTION);
+                optitem();
+                optlistp();
+                break;
+            default:
+                break;
+        }
+    } 
+    void optitem() {
+        switch(look.tag) {
+            case Tag.OPTION -> {}
+            default -> error("Expected option");
+        }
+        match(Tag.OPTION);
+        match('(');
+        bexpr();
+        match(')');
+        match(Tag.DO);
+        stat();
+    } 
+    void bexpr() {
+        switch(look.tag) {
+            case Tag.RELOP -> {}
+            default -> error("Expected relational operator");
+        }
+        match(Tag.RELOP);
+        expr();
+        expr();
+    } 
+    void expr() {
+        switch(look.tag) {
+            case '+': 
+                match('+');
+                match('(');
+                exprlist();
+                match(')');
+                break;
             case '*':
                 match('*');
-                fact();
-                termp();
+                match('(');
+                exprlist();
+                match(')');
+                break;
+            case '-': 
+                match('-'); 
+                expr();
+                expr();
                 break;
             case '/':
                 match('/');
-                fact();
-                termp();
-                break;
-            default:
-                break;
-        }
-    }
-
-    private void fact() {
-        guide(fact);
-
-        switch (look.tag) {
-            case '(':
-                match('(');
                 expr();
-                match(')');
+                expr();
                 break;
             case Tag.NUM:
                 match(Tag.NUM);
                 break;
+            case Tag.ID:
+                match(Tag.ID);
+                break;
             default:
-                error("Expected '(' or number");
+                error("Expected operator, number or identifier");
+        }
+    } 
+    void exprlist() {
+        switch(look.tag)
+        expr();
+        exprlistp();
+    }
+    void exprlistp() {
+        switch(look.tag) {
+            case ',':
+                match(',');
+                expr();
+                exprlistp();
+                break;
+            default:
+                break;
         }
     }
 
     public static void main(String[] args) {
         Lexer lex = new Lexer();
-        String path = "C:\\Users\\vitoi\\Desktop\\LFT\\es2_1\\es2_1\\src\\file"; // il percorso del file da leggere
+        String path = "file"; // il percorso del file da leggere
         try {
             BufferedReader br = new BufferedReader(new FileReader(path));
             Parser parser = new Parser(lex, br);
-            parser.start();
+            parser.prog();
             System.out.println("Input OK");
             br.close();
         } catch (IOException e) {e.printStackTrace();}
